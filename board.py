@@ -65,8 +65,25 @@ class Board:
 
 
 
+        # Handle castling move
+        if isinstance(piece, King) and abs(end_col - start_col) == 2:
+            if end_col > start_col:  # Kingside castling
+                rook = self.grid[end_row][7]
+                self.grid[end_row][7] = None
+                self.grid[end_row][5] = rook
+                rook.position = (end_row, 5)
+            else:  # Queenside castling
+                rook = self.grid[end_row][0]
+                self.grid[end_row][0] = None
+                self.grid[end_row][3] = rook
+                rook.position = (end_row, 3)
+
+        
+
+
+
         # Mark the piece as moved (no longer eligible for first-move bonuses)
-        piece.is_first_move = False
+        piece.has_moved = True
 
         return None
 
@@ -123,7 +140,9 @@ class Board:
     def get_straight_line_moves(self, piece):
         moves = []
         row, col = piece.position
+
         directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
+        
         for dr, dc in directions:
             for i in range(1, 8):
                 new_row, new_col = row + dr * i, col + dc * i
@@ -235,7 +254,6 @@ class Board:
 
 
 
-
     # castling stuff
     def get_castling_moves(self, king):
         row, col = king.position
@@ -254,3 +272,5 @@ class Board:
                 moves.append((row, col - 2))
 
         return moves
+
+

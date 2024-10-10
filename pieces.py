@@ -3,7 +3,6 @@
 #TODO: 
 # PAWN PROMOTION!
 # En-passant
-# fix castling while rock piece is "attacked"
 
 class Piece:
     def __init__(self, color, position=None):
@@ -18,7 +17,7 @@ class Piece:
 
 
 
-
+# PAWN piece
 class Pawn(Piece):
     def valid_moves(self, board):
         moves = []
@@ -40,17 +39,22 @@ class Pawn(Piece):
         return moves
 
 
-
+# ROOK
 class Rook(Piece):
     
     def valid_moves(self, board):
-        return board.get_straight_line_moves(self)
+        
+         # castling moves if available
+        moves = []
+        
+
+        moves.extend(board.get_straight_line_moves(self))
+        
+        return moves
     
    
 
-
-
-
+# KNIGHT
 class Knight(Piece):
     def valid_moves(self, board):
         moves = []
@@ -66,21 +70,21 @@ class Knight(Piece):
 
 
 
+# BISHOP
 class Bishop(Piece):
     def valid_moves(self, board):
         return board.get_diagonal_moves(self)
 
 
 
-
-
+# QUEEN
 class Queen(Piece):
     def valid_moves(self, board):
         return board.get_straight_line_moves(self) + board.get_diagonal_moves(self)
 
 
 
-
+# KING
 class King(Piece):
 
     def valid_moves(self, board):
