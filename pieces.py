@@ -15,8 +15,6 @@ class Piece:
 
 
 
-
-
 # PAWN piece
 class Pawn(Piece):
     def valid_moves(self, board):
@@ -37,6 +35,7 @@ class Pawn(Piece):
                 moves.append((row + direction, col + dc))
 
         return moves
+
 
 
 # ROOK

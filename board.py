@@ -1,4 +1,4 @@
-from pieces import Pawn, Rook, Knight, Bishop, Queen, King, Piece
+from pieces import Pawn, Rook, Knight, Bishop, Queen, King
 
 
 class Board:
@@ -48,10 +48,6 @@ class Board:
 
         captured_piece = self.grid[end_row][end_col]
 
-        # Handle en passant capture
-        if isinstance(piece, Pawn) and (end_row, end_col) == self.en_passant_target:
-            captured_piece = self.grid[start_row][end_col]
-            self.grid[start_row][end_col] = None
 
         if captured_piece:
             if captured_piece.color == 'white':
@@ -65,7 +61,7 @@ class Board:
 
 
 
-        # Handle castling move
+        # CASTLING MOVE
         if isinstance(piece, King) and abs(end_col - start_col) == 2:
             if end_col > start_col:  # Kingside castling
                 rook = self.grid[end_row][7]
@@ -78,35 +74,28 @@ class Board:
                 self.grid[end_row][3] = rook
                 rook.position = (end_row, 3)
 
+
+
+        # PAWN PROMOTION MOVE
+        if isinstance(piece, Pawn):
+            if (piece.color == 'white' and piece.position[0] == 0) or (piece.color == 'black' and piece.position[0] == 7):
+                return "promotion", piece  # Signal promotion and return the pawn
+
+          
         
+        # EN PASSANT CAPTURE
+        if isinstance(piece, Pawn) and (end_row, end_col) == self.en_passant_target:
+            captured_piece = self.grid[start_row][end_col]
+            self.grid[start_row][end_col] = None
 
-
-
+        
         # Mark the piece as moved (no longer eligible for first-move bonuses)
         piece.has_moved = True
 
-        return None
+        return None, piece
 
 
 
-    # # TODO: WIP - gotta fix this
-    # def promote_pawn(self, pawn, position):
-        
-    #     # Prompt the user to choose a piece for promotion
-    #     promotion_choice = Game.get_promotion_choice(pawn.color) # THIS LINE IS CREATING ISSUES! 
-
-    #     # Replace the pawn with the chosen piece
-    #     if promotion_choice == "Queen":
-    #         promoted_piece = Queen(pawn.color, position)
-    #     elif promotion_choice == "Rook":
-    #         promoted_piece = Rook(pawn.color, position)
-    #     elif promotion_choice == "Bishop":
-    #         promoted_piece = Bishop(pawn.color, position)
-    #     elif promotion_choice == "Knight":
-    #         promoted_piece = Knight(pawn.color, position)
-
-    #     row, col = position
-    #     self.grid[row][col] = promoted_piece
 
 
 
@@ -254,8 +243,9 @@ class Board:
 
 
 
-    # castling stuff
+    # CASTLING stuff
     def get_castling_moves(self, king):
+
         row, col = king.position
         moves = []
 
@@ -274,3 +264,19 @@ class Board:
         return moves
 
 
+
+
+    # PROMOTION
+    def promote_pawn(self, pawn, selected_promotion_piece):
+
+        if selected_promotion_piece == "Queen":
+              promoted_piece = Queen(pawn.color, pawn.position)
+        elif selected_promotion_piece == "Rook":
+              promoted_piece = Rook(pawn.color, pawn.position)              
+        elif selected_promotion_piece == "Knight":
+              promoted_piece = Knight(pawn.color, pawn.position)
+        elif selected_promotion_piece == "Bishop":
+              promoted_piece = Bishop(pawn.color, pawn.position)
+
+        row, col = pawn.position
+        self.grid[row][col] = promoted_piece

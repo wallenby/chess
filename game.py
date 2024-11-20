@@ -1,10 +1,4 @@
-# game.py
-
 import tkinter as tk
-from tkinter import Canvas
-from PIL import Image, ImageDraw, ImageTk
-
-
 from tkinter.simpledialog import askstring
 from board import Board
 from pieces import Pawn, Rook, Knight, Bishop, Queen, King
@@ -18,6 +12,11 @@ class Game:
         self.selected_piece = None
         self.root = root
         self.create_ui()
+        self.promotion_popup_active = False  # Track if popup is active
+        self.selected_promotion_piece = None  # Attribute to store the selected piece
+        
+
+
 
 
     def create_ui(self):
@@ -36,6 +35,8 @@ class Game:
         self.canvas.bind("<Button-1>", self.on_click)
 
 
+
+
     def draw_board(self):
         colors = ["#DDB88C", "#A66D4F"]
         for row in range(8):
@@ -47,6 +48,8 @@ class Game:
                 y2 = y1 + 80
                 self.canvas.create_rectangle(x1, y1, x2, y2, fill=color, tags="square")
         self.canvas.tag_lower("square")
+
+
 
 
     def draw_pieces(self):
@@ -109,14 +112,19 @@ class Game:
 
         self.canvas.delete("highlight")
 
-    
-
         if self.selected_piece:
             
             legal_moves = self.board.get_legal_moves(self.selected_piece)
             
             if (row, col) in legal_moves:
-                self.board.move_piece(self.selected_piece, (row, col))
+                
+                move_result = self.board.move_piece(self.selected_piece, (row, col))
+
+                if move_result[0] == 'promotion':
+                    print("PROMOTION")
+                    self.show_promotion_popup(self.selected_piece)
+
+
                 self.update_captured_pieces()
 
 
@@ -130,12 +138,12 @@ class Game:
                 else:
                     self.status_label.config(text="")
 
-                    
+
+
                 self.turn = 'black' if self.turn == 'white' else 'white'
 
             self.selected_piece = None
             self.draw_pieces()
-            self.draw_semi_transparent_rectangle(0, 0, 0, 0, (255, 0, 0), 0)
        
        
         else:
@@ -145,20 +153,12 @@ class Game:
             # If selected piece is the right colour (meaning it's their turn)
             if piece and piece.color == self.turn:
 
-                
-
-
                 self.selected_piece = piece
                 legal_moves = self.board.get_legal_moves(piece)
 
-                self.draw_semi_transparent_rectangle(piece.position[1] * 80, piece.position[0] * 80,
-                                                      piece.position[1] * 80 + 80, piece.position[0] * 80 + 80, (255, 255, 0), 128)
-
                 self.canvas.create_rectangle(col * 80, row * 80, (col + 1) * 80, (row + 1) * 80, outline="yellow", width=4, tags="highlight")
             
-                
-                
-               
+                               
                 # Draw the legal moves with a green outline (full square, no fill)
                 for move in legal_moves:
                     move_row, move_col = move
@@ -172,10 +172,8 @@ class Game:
                         fill='',                 # No fill (transparent)
                         tags="highlight"
                     )
-                    
-                    self.draw_semi_transparent_rectangle(move_col * 80, move_row * 80,
-                                                      move_col * 80 + 80, move_row * 80 + 80, (0, 255, 0), 128)
 
+                    
                     
                     
                     
@@ -183,59 +181,96 @@ class Game:
 
 
 
-    def draw_semi_transparent_rectangle(self, x1, y1, x2, y2, color, opacity):
-        # Create an empty image with transparency (RGBA mode)
-        img = Image.new("RGBA", (x2 - x1, y2 - y1), (255, 255, 255, 0))
-        draw = ImageDraw.Draw(img)
 
-        # Draw a rectangle with the given color and opacity
-        draw.rectangle([0, 0, x2 - x1, y2 - y1], fill=color + (opacity,))
 
-        # Convert the image to a Tkinter-compatible format
-        self.tk_img = ImageTk.PhotoImage(img)
+    def show_promotion_popup(self, pawn):
+        # Display a promotion popup with selectable pieces
+        self.promotion_popup_active = True
+        self.canvas.delete("piece")
 
-        # Place the image on the canvas
-        self.canvas.create_image(x1, y1, image=self.tk_img, anchor="nw")
+        # Draw the promotion selection box
+        self.canvas.create_rectangle(0, 0, 640, 640, fill="black", outline="white", width=2, tags="promotion_overlay")
 
-    def highlight_moves(self):
-        # Example usage, draw a semi-transparent rectangle for each move
-        self.draw_semi_transparent_rectangle(80, 80, 160, 160, (0, 255, 0), 128)  # Green with 50% opacity
-        self.draw_semi_transparent_rectangle(160, 160, 240, 240, (255, 0, 0), 128)
+
+
+
+
+
+        self.canvas.delete("piece")
+        self.canvas.create_text(0, 0, text=" ", font=("Arial", 78), tags="piece", fill="black")
+
+
+
+
+
+
+
+
+        # Draw the promotion selection box
+        self.canvas.create_rectangle(160, 240, 480, 400, fill="gray", outline="black", width=2, tags="promotion_box")
+
+        piece_options = ["Queen", "Rook", "Bishop", "Knight"]
+
+        # Draw selectable piece options
+        if pawn.color == 'black':
+            piece_options = ["♕", "♖", "♗", "♘"]
+        elif pawn.color == 'white':
+            piece_options = ["♛", "♜", "♝", "♞"]
+        
+        x_positions = [200, 280, 360, 440]  # X positions for each piece icon
+
+        for i, piece in enumerate(piece_options):
+            # Draw each piece text in the selected color
+            self.canvas.create_text(
+                x_positions[i], 320, text=piece,
+                font=("Arial", 78), fill=pawn.color,
+                tags=("promotion_option", piece)
+            )
+
+        # Bind clicks to piece selection
+        
+        self.canvas.tag_bind("promotion_option", "<Button-1>", lambda event: self.select_promotion_piece(event, pawn))
+
+
+
+
+         
+
         
 
 
 
 
+    def select_promotion_piece(self, event, pawn):
+        # Handle the user's selection of a promotion piece
 
-    # PROMOTE PAWS - when pawn reaches end, chose which piece to promote to!
-    def handle_promotion(self, position):
-        color = 'white' if self.turn == 'black' else 'black'  # Since we switch turns after moving
-        promotion_choice = self.get_promotion_choice(color)
-        row, col = position
+        # Get the selected piece based on click location
+        self.selected_promotion_piece = self.canvas.gettags(event.widget.find_withtag("current"))[1]
+        print(self.selected_promotion_piece)
+        
+        if self.selected_promotion_piece == "♖" or self.selected_promotion_piece ==  "♜":
+            self.selected_promotion_piece = "Rook"
+        elif self.selected_promotion_piece == "♘" or self.selected_promotion_piece == "♞":
+            self.selected_promotion_piece = "Knight"
+        elif self.selected_promotion_piece == "♗" or self.selected_promotion_piece == "♝":
+            self.selected_promotion_piece = "Bishop"
+        elif self.selected_promotion_piece == "♕" or self.selected_promotion_piece == "♛":
+            self.selected_promotion_piece = "Queen"
+        
+        # Logic to replace the pawn with selected piece goes here
+        print(f"Promoted to { self.selected_promotion_piece} ({pawn.color})")
 
-        if promotion_choice == "Queen":
-            promoted_piece = Queen(color, position)
-        elif promotion_choice == "Rook":
-            promoted_piece = Rook(color, position)
-        elif promotion_choice == "Bishop":
-            promoted_piece = Bishop(color, position)
-        elif promotion_choice == "Knight":
-            promoted_piece = Knight(color, position)
+        # Remove the promotion popup
+        self.canvas.delete("promotion_overlay")
+        self.canvas.delete("promotion_box")
+        self.canvas.delete("promotion_option")
 
-        self.board.grid[row][col] = promoted_piece
+
+        self.board.promote_pawn(pawn, self.selected_promotion_piece)
+        
         self.draw_pieces()
 
-
-    # PROMOTE PAWS - when pawn reaches end, chose which piece to promote to!
-    def get_promotion_choice(self, color):
-        choice = askstring("Pawn Promotion", f"Promote {color} pawn to (Queen, Rook, Bishop, Knight):")
-        if choice:
-            choice = choice.capitalize()
-        while choice not in ["Queen", "Rook", "Bishop", "Knight"]:
-            choice = askstring("Pawn Promotion", f"Invalid choice. Promote {color} pawn to (Queen, Rook, Bishop, Knight):").capitalize()
-        return choice
-
-
+       
               
 
 
